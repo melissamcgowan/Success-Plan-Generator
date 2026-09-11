@@ -1,19 +1,19 @@
 # AI-Powered Success Plan Generator
 
-Turns raw account data into an executive-ready Customer Success Plan, structured around TSIA's six success-plan components.
+Turns raw account data into an executive-ready Customer Success Plan.
 
 ## Why this exists
 
-Most CS teams write success plans by hand, one account at a time, in whatever format the CSM prefers. That means inconsistent quality, hours of manual slide-building, and no guarantee a plan actually covers what TSIA recommends. This project generates a consistent, executive-facing success plan deck straight from account data, so every plan looks and reads the same regardless of who's running the account.
+Most CS teams write success plans by hand, one account at a time, in whatever format the CSM prefers. That means inconsistent quality, hours of manual slide-building, and metrics that often describe the vendor's product (feature adoption, active users) instead of what the plan is supposed to be about: the value the customer is actually getting. This project generates a consistent, executive-facing success plan deck straight from account data, framed around outcomes the customer cares about.
 
 ## What it does
 
-Given structured account data (stakeholders, usage, milestones, metrics, actions, risks), the generator produces a polished slide deck covering all six TSIA success-plan components:
+Given structured account data (stakeholders, usage, milestones, metrics, actions, risks), the generator produces a polished slide deck covering six sections of a customer success plan:
 
 1. **Customer Profile** — stakeholders, business goals, key use cases
 2. **Current State Assessment** — product usage, adoption levels, known challenges
 3. **Milestones & Timeline** — journey stages with target dates and status
-4. **Success Metrics** — adoption, onboarding, and business-impact metrics vs. target
+4. **Success Metrics** — outcomes measured in the customer's own terms: time saved, cost reduced, revenue gained, or process simplified, tracked against target
 5. **Actions & Responsibilities** — what the CS team owns vs. what the customer owns
 6. **Risk Management** — open risks, likelihood/impact, mitigation plans
 
@@ -47,7 +47,7 @@ To connect a live CSP (Gainsight, Totango, ChurnZero, etc.), only `generator_ste
 | Goals & Use Cases | Business goals and use cases per account | Success Plan / Objectives object |
 | Usage & Adoption | Feature-level adoption and known challenges | Product usage / telemetry feed |
 | Milestones | Journey stages, target dates, status | Success Plan / Timeline / CTAs |
-| Success Metrics | Adoption, onboarding, business-impact metrics vs. target | Scorecard / Outcomes object |
+| Success Metrics | Customer-facing outcomes vs. target: time saved, cost reduced, revenue gained, or process simplified | Scorecard / Outcomes object |
 | Actions | Owned actions (CS team vs. customer) | CTA (Call to Action) / Task object |
 | Risks | Open risks, likelihood/impact, mitigation | Risk CTA / Health score drivers |
 
@@ -76,7 +76,7 @@ node generator_step2_build_deck.js ACC-1001     # writes success_plan_ACC-1001.p
 
 ## Known limitations / next iteration
 
-- Progress bars on the Success Metrics slide assume "higher is better." A metric like time-to-first-value, where lower is better, needs an inverted calculation, which is the next planned fix.
+- Each metric carries a `higher_is_better` flag so the progress bar direction is correct whether the metric counts up (dollars saved, tools consolidated) or down (time-to-resolution). All sample metrics currently count up; the flag is there for when a "lower is better" metric gets added.
 - Currently generates one deck per account on demand. A natural next step is batch generation across an entire book of business, paired with the CSM Workload & Book-of-Business Balancer project.
 
 ## Part of a larger portfolio

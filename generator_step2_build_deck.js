@@ -43,6 +43,16 @@ function healthColor(score) {
   if (score >= 50) return AMBER;
   return RED;
 }
+function formatMetricValue(value, unit) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  if (unit && unit.startsWith("$")) return "$" + n.toLocaleString("en-US");
+  if (n >= 1000) return n.toLocaleString("en-US");
+  return String(n);
+}
+function formatUnitLabel(unit) {
+  return unit && unit.startsWith("$") ? unit.slice(1).replace(/^\//, "per ") : unit;
+}
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE"; // 13.33 x 7.5
@@ -128,17 +138,13 @@ function sectionTitle(slide, kicker, title) {
   slide.addText(nextMilestone.milestone, { x: 8.5, y: 2.12, w: 3.9, h: 0.7, fontFace: FONT_BODY, fontSize: 13, bold: true, color: "222222", isTextBox: true, margin: 0 });
   slide.addText(`Target: ${nextMilestone.target_date_fmt}  \u2022  ${nextMilestone.status}`, { x: 8.5, y: 2.75, w: 3.9, h: 0.4, fontFace: FONT_BODY, fontSize: 10.5, color: statusColor(nextMilestone.status), bold: true, isTextBox: true, margin: 0 });
 
-  // bottom row: three quick stat cards from success metrics (one per category)
-  const cats = ["Adoption", "Onboarding", "Business Impact"];
+  // bottom row: quick stat cards, one per customer-value metric
   let bx = 0.6;
-  cats.forEach((cat) => {
-    const m = data.metrics.find(x => x.category === cat);
+  data.metrics.forEach((m) => {
     slide.addShape(pres.ShapeType.roundRect, { x: bx, y: 4.5, w: 3.9, h: 1.9, rectRadius: 0.08, fill: { color: LIGHT_BG }, line: { color: "E2E6F0", width: 1 } });
-    slide.addText(cat.toUpperCase(), { x: bx + 0.25, y: 4.68, w: 3.4, h: 0.3, fontFace: FONT_BODY, fontSize: 10.5, bold: true, color: SLATE, charSpacing: 1, isTextBox: true, margin: 0 });
-    if (m) {
-      slide.addText(`${m.current_value} / ${m.target_value}`, { x: bx + 0.25, y: 5.0, w: 3.4, h: 0.6, fontFace: FONT_HEAD, fontSize: 26, bold: true, color: NAVY, isTextBox: true, margin: 0 });
-      slide.addText(`${m.metric_name} (${m.unit})`, { x: bx + 0.25, y: 5.62, w: 3.5, h: 0.65, fontFace: FONT_BODY, fontSize: 10.5, color: GREY, isTextBox: true, margin: 0 });
-    }
+    slide.addText(m.category.toUpperCase(), { x: bx + 0.25, y: 4.68, w: 3.4, h: 0.3, fontFace: FONT_BODY, fontSize: 10.5, bold: true, color: SLATE, charSpacing: 1, isTextBox: true, margin: 0 });
+    slide.addText(`${formatMetricValue(m.current_value, m.unit)} / ${formatMetricValue(m.target_value, m.unit)}`, { x: bx + 0.25, y: 5.0, w: 3.4, h: 0.6, fontFace: FONT_HEAD, fontSize: 26, bold: true, color: NAVY, isTextBox: true, margin: 0 });
+    slide.addText(`${m.metric_name} (${formatUnitLabel(m.unit)})`, { x: bx + 0.25, y: 5.62, w: 3.5, h: 0.65, fontFace: FONT_BODY, fontSize: 10.5, color: GREY, isTextBox: true, margin: 0 });
     bx += 4.15;
   });
 
@@ -151,7 +157,7 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 1", "Customer Profile");
+  sectionTitle(slide, "Section 1", "Customer Profile");
 
   slide.addText("Key Stakeholders", { x: 0.6, y: 1.55, w: 6, h: 0.35, fontFace: FONT_BODY, fontSize: 13, bold: true, color: NAVY, isTextBox: true, margin: 0 });
   let sy = 2.0;
@@ -184,7 +190,7 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 2", "Current State Assessment");
+  sectionTitle(slide, "Section 2", "Current State Assessment");
 
   slide.addText("Feature Adoption", { x: 0.6, y: 1.55, w: 6.3, h: 0.35, fontFace: FONT_BODY, fontSize: 13, bold: true, color: NAVY, isTextBox: true, margin: 0 });
 
@@ -234,7 +240,7 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 3", "Milestones & Timeline");
+  sectionTitle(slide, "Section 3", "Milestones & Timeline");
 
   const n = data.milestones.length;
   const trackY = 3.3;
@@ -276,33 +282,34 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 4", "Success Metrics");
+  sectionTitle(slide, "Section 4", "Success Metrics");
 
   const catMeta = {
-    "Adoption": "Active usage of the platform",
-    "Onboarding": "Speed to first value",
-    "Business Impact": "Outcomes tied to ROI",
+    "Time Saved": "Hours or cycle time given back to the customer",
+    "Cost Reduction": "Spend avoided or reduced for the customer",
+    "Process Simplified": "Steps, tools, or manual work removed",
+    "Revenue Growth": "Sales or revenue enabled for the customer",
   };
+  const cardW = Math.min(4.0, 11.9 / data.metrics.length);
   let cx = 0.6;
-  ["Adoption", "Onboarding", "Business Impact"].forEach((cat) => {
-    const m = data.metrics.find(x => x.category === cat);
-    slide.addShape(pres.ShapeType.roundRect, { x: cx, y: 1.65, w: 4.0, h: 3.0, rectRadius: 0.08, fill: { color: LIGHT_BG }, line: { color: "E2E6F0", width: 1 } });
-    slide.addText(cat.toUpperCase(), { x: cx + 0.3, y: 1.9, w: 3.4, h: 0.3, fontFace: FONT_BODY, fontSize: 11, bold: true, color: SLATE, charSpacing: 1, isTextBox: true, margin: 0 });
-    slide.addText(catMeta[cat], { x: cx + 0.3, y: 2.2, w: 3.4, h: 0.35, fontFace: FONT_BODY, fontSize: 10, italic: true, color: GREY, isTextBox: true, margin: 0 });
-    if (m) {
-      const pct = Math.min(100, Math.round((m.current_value / m.target_value) * 100));
-      slide.addText(m.metric_name, { x: cx + 0.3, y: 2.5, w: 3.4, h: 0.4, fontFace: FONT_BODY, fontSize: 12, bold: true, color: "222222", isTextBox: true, margin: 0 });
-      slide.addText(String(m.current_value), { x: cx + 0.3, y: 2.85, w: 3.4, h: 0.65, fontFace: FONT_HEAD, fontSize: 34, bold: true, color: NAVY, isTextBox: true, margin: 0 });
-      slide.addText(`of ${m.target_value} ${m.unit} target`, { x: cx + 0.3, y: 3.48, w: 3.4, h: 0.3, fontFace: FONT_BODY, fontSize: 10.5, color: GREY, isTextBox: true, margin: 0 });
-      // progress bar
-      slide.addShape(pres.ShapeType.roundRect, { x: cx + 0.3, y: 3.88, w: 3.4, h: 0.22, rectRadius: 0.03, fill: { color: "E2E6F0" }, line: { type: "none" } });
-      slide.addShape(pres.ShapeType.roundRect, { x: cx + 0.3, y: 3.88, w: Math.max(0.15, 3.4 * pct / 100), h: 0.22, rectRadius: 0.03, fill: { color: pct >= 90 ? GREEN : pct >= 60 ? AMBER : RED }, line: { type: "none" } });
-      slide.addText(`${pct}% of target`, { x: cx + 0.3, y: 4.15, w: 3.4, h: 0.3, fontFace: FONT_BODY, fontSize: 9.5, color: GREY, isTextBox: true, margin: 0 });
-    }
-    cx += 4.25;
+  data.metrics.forEach((m) => {
+    const higherIsBetter = m.higher_is_better !== 0;
+    const rawPct = higherIsBetter ? (m.current_value / m.target_value) * 100 : (m.target_value / m.current_value) * 100;
+    const pct = Math.max(0, Math.min(100, Math.round(rawPct)));
+    slide.addShape(pres.ShapeType.roundRect, { x: cx, y: 1.65, w: cardW - 0.25, h: 3.0, rectRadius: 0.08, fill: { color: LIGHT_BG }, line: { color: "E2E6F0", width: 1 } });
+    slide.addText(m.category.toUpperCase(), { x: cx + 0.3, y: 1.9, w: cardW - 0.85, h: 0.3, fontFace: FONT_BODY, fontSize: 11, bold: true, color: SLATE, charSpacing: 1, isTextBox: true, margin: 0 });
+    slide.addText(catMeta[m.category] || "Outcome delivered for the customer", { x: cx + 0.3, y: 2.2, w: cardW - 0.85, h: 0.35, fontFace: FONT_BODY, fontSize: 10, italic: true, color: GREY, isTextBox: true, margin: 0 });
+    slide.addText(m.metric_name, { x: cx + 0.3, y: 2.5, w: cardW - 0.85, h: 0.4, fontFace: FONT_BODY, fontSize: 12, bold: true, color: "222222", isTextBox: true, margin: 0 });
+    slide.addText(formatMetricValue(m.current_value, m.unit), { x: cx + 0.3, y: 2.85, w: cardW - 0.85, h: 0.65, fontFace: FONT_HEAD, fontSize: 34, bold: true, color: NAVY, isTextBox: true, margin: 0 });
+    slide.addText(`of ${formatMetricValue(m.target_value, m.unit)} ${formatUnitLabel(m.unit)} target`, { x: cx + 0.3, y: 3.48, w: cardW - 0.85, h: 0.3, fontFace: FONT_BODY, fontSize: 10.5, color: GREY, isTextBox: true, margin: 0 });
+    // progress bar
+    slide.addShape(pres.ShapeType.roundRect, { x: cx + 0.3, y: 3.88, w: cardW - 0.85, h: 0.22, rectRadius: 0.03, fill: { color: "E2E6F0" }, line: { type: "none" } });
+    slide.addShape(pres.ShapeType.roundRect, { x: cx + 0.3, y: 3.88, w: Math.max(0.15, (cardW - 0.85) * pct / 100), h: 0.22, rectRadius: 0.03, fill: { color: pct >= 90 ? GREEN : pct >= 60 ? AMBER : RED }, line: { type: "none" } });
+    slide.addText(`${pct}% of target`, { x: cx + 0.3, y: 4.15, w: cardW - 0.85, h: 0.3, fontFace: FONT_BODY, fontSize: 9.5, color: GREY, isTextBox: true, margin: 0 });
+    cx += cardW;
   });
 
-  slide.addText("Metric definitions follow TSIA guidance: adoption (active users / feature usage), onboarding (time-to-value, activation), and business impact (ROI, outcomes).", {
+  slide.addText("Metrics are tracked in the terms that matter to the customer: time saved, cost avoided, revenue enabled, or complexity removed from their operations.", {
     x: 0.6, y: 4.95, w: 12.1, h: 0.5, fontFace: FONT_BODY, fontSize: 10.5, italic: true, color: GREY, isTextBox: true, margin: 0,
   });
 
@@ -315,7 +322,7 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 5", "Actions & Responsibilities");
+  sectionTitle(slide, "Section 5", "Actions & Responsibilities");
 
   const cols = [
     { owner: "CS Team", x: 0.6, color: NAVY },
@@ -345,7 +352,7 @@ function sectionTitle(slide, kicker, title) {
 {
   const slide = pres.addSlide();
   slide.background = { color: WHITE };
-  sectionTitle(slide, "TSIA Component 6", "Risk Management");
+  sectionTitle(slide, "Section 6", "Risk Management");
 
   const headers = ["Risk", "Likelihood", "Impact", "Mitigation"];
   const rowsTable = data.risks.map(r => [r.risk, r.likelihood, r.impact, r.mitigation]);
